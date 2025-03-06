@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -74,6 +75,8 @@ func StartDB() Service {
 		sqlDB:  sqlDB,
 		gormDB: gormDB,
 	}
+
+	fmt.Println("Database connection established.")
 
 	return dbInstance
 }

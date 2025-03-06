@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/kevinhartarto/mytodolist/internal/database"
 	"github.com/kevinhartarto/mytodolist/internal/server"
 )
@@ -13,6 +14,7 @@ import (
 var ctx = context.Background
 
 func main() {
+
 	// Ports
 	apiPort := os.Getenv("PORT_API")
 	if apiPort == "" {
