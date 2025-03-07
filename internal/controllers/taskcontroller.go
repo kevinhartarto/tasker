@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/kevinhartarto/mytodolist/internal/database"
@@ -37,6 +38,14 @@ type TaskController interface {
 	// Update a task
 	// return status of update
 	UpdateTask(c *fiber.Ctx) error
+
+	// Create a task
+	// return new task id
+	CreateTask(c *fiber.Ctx) error
+
+	// Create a task group
+	// return new task group id
+	CreateTaskGroup(c *fiber.Ctx) error
 }
 
 var (
@@ -179,4 +188,30 @@ func (tc *taskController) UpdateTask(c *fiber.Ctx) error {
 		return c.SendString(string(result))
 	}
 	return c.SendStatus(fiber.StatusBadRequest)
+}
+
+func (tc *taskController) CreateTask(c *fiber.Ctx) error {
+	if err := c.BodyParser(&task); err != nil {
+		return err
+	}
+
+	if err := tc.db.UseGorm().Create(&task).Error; err != nil {
+		return err
+	}
+
+	response := fmt.Sprintf("Task (%v) created", task.TaskId)
+	return c.SendString(response)
+}
+
+func (tc *taskController) CreateTaskGroup(c *fiber.Ctx) error {
+	if err := c.BodyParser(&taskGroup); err != nil {
+		return err
+	}
+
+	if err := tc.db.UseGorm().Create(&taskGroup).Error; err != nil {
+		return err
+	}
+
+	response := fmt.Sprintf("Task group (%v) created", taskGroup.TaskGroupId)
+	return c.SendString(response)
 }
