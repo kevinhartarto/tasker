@@ -26,6 +26,7 @@ func NewHandler(db database.Service) *fiber.App {
 
 	// Tasks
 	list := controllers.NewTaskController(db)
+	day := controllers.NewDayController(db)
 	listAPI := v1.Group("/list")
 	listAPI.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
@@ -50,6 +51,12 @@ func NewHandler(db database.Service) *fiber.App {
 	})
 	listAPI.Put("/task/update", func(c *fiber.Ctx) error {
 		return list.UpdateTask(c)
+	})
+	listAPI.Get("/days", func(c *fiber.Ctx) error {
+		return day.GetAllDays(c)
+	})
+	listAPI.Get("/day", func(c *fiber.Ctx) error {
+		return day.GetDay(c)
 	})
 
 	return app
