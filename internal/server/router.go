@@ -46,6 +46,12 @@ func NewHandler(db database.Service) *fiber.App {
 	listAPI.Get("/group/tasks", func(c *fiber.Ctx) error {
 		return list.GetAllTasksByTaskGroup(c)
 	})
+	listAPI.Post("/task", func(c *fiber.Ctx) error {
+		return list.CreateTask(c)
+	})
+	listAPI.Post("/group", func(c *fiber.Ctx) error {
+		return list.CreateTaskGroup(c)
+	})
 	listAPI.Put("/group/update", func(c *fiber.Ctx) error {
 		return list.UpdateTaskGroup(c)
 	})

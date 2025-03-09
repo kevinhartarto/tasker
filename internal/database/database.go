@@ -58,6 +58,7 @@ func StartDB() Service {
 		Conn: sqlDB,
 	}), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "utils.",
 			SingularTable: true,
 		},
 	})
