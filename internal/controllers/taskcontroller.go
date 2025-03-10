@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/kevinhartarto/mytodolist/internal/database"
 	"github.com/kevinhartarto/mytodolist/internal/models"
+	"github.com/kevinhartarto/mytodolist/internal/utils"
 )
 
 type TaskController interface {
@@ -195,6 +196,8 @@ func (tc *taskController) CreateTask(c *fiber.Ctx) error {
 		return err
 	}
 
+	task.TaskId, _ = utils.GenerateNewUUID()
+
 	if err := tc.db.UseGorm().Create(&task).Error; err != nil {
 		return err
 	}
@@ -207,6 +210,7 @@ func (tc *taskController) CreateTaskGroup(c *fiber.Ctx) error {
 	if err := c.BodyParser(&taskGroup); err != nil {
 		return err
 	}
+	taskGroup.TaskGroupId, _ = utils.GenerateNewUUID()
 
 	if err := tc.db.UseGorm().Create(&taskGroup).Error; err != nil {
 		return err

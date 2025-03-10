@@ -7,7 +7,7 @@ import (
 )
 
 type TaskGroup struct {
-	TaskGroupId uuid.UUID `json:"task_group_id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	TaskGroupId uuid.UUID `json:"task_group_id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	TaskGroup   string    `json:"task_group"`
 	Reminder    bool      `json:"reminder" gorm:"default:false"`
 	Repeats     bool      `json:"repeats" gorm:"default:false"`
@@ -19,7 +19,7 @@ type TaskGroup struct {
 }
 
 type Task struct {
-	TaskId     uuid.UUID `json:"task_id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	TaskId     uuid.UUID `json:"task_id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Task       string    `json:"task"`
 	CreatedAt  time.Time `json:"created"`
 	UpdatedAt  time.Time `json:"updated"`
