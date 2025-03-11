@@ -31,13 +31,15 @@ func NewHandler(db database.Service) *fiber.App {
 	listAPI.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
+
+	// GET
 	listAPI.Get("/", func(c *fiber.Ctx) error {
 		return list.GetAllTaskGroups(c)
 	})
 	listAPI.Get("/tasks", func(c *fiber.Ctx) error {
 		return list.GetAllTasks(c)
 	})
-	listAPI.Get("/group", func(c *fiber.Ctx) error {
+	listAPI.Get("/groups", func(c *fiber.Ctx) error {
 		return list.GetTaskGroup(c)
 	})
 	listAPI.Get("/task", func(c *fiber.Ctx) error {
@@ -46,18 +48,6 @@ func NewHandler(db database.Service) *fiber.App {
 	listAPI.Get("/group/tasks", func(c *fiber.Ctx) error {
 		return list.GetAllTasksByTaskGroup(c)
 	})
-	listAPI.Post("/task", func(c *fiber.Ctx) error {
-		return list.CreateTask(c)
-	})
-	listAPI.Post("/group", func(c *fiber.Ctx) error {
-		return list.CreateTaskGroup(c)
-	})
-	listAPI.Put("/group/update", func(c *fiber.Ctx) error {
-		return list.UpdateTaskGroup(c)
-	})
-	listAPI.Put("/task/update", func(c *fiber.Ctx) error {
-		return list.UpdateTask(c)
-	})
 	listAPI.Get("/days", func(c *fiber.Ctx) error {
 		return day.GetAllDays(c)
 	})
@@ -65,5 +55,20 @@ func NewHandler(db database.Service) *fiber.App {
 		return day.GetDay(c)
 	})
 
+	// POST
+	listAPI.Post("/task", func(c *fiber.Ctx) error {
+		return list.CreateTask(c)
+	})
+	listAPI.Post("/group", func(c *fiber.Ctx) error {
+		return list.CreateTaskGroup(c)
+	})
+
+	// PUT
+	listAPI.Put("/group/update", func(c *fiber.Ctx) error {
+		return list.UpdateTaskGroup(c)
+	})
+	listAPI.Put("/task/update", func(c *fiber.Ctx) error {
+		return list.UpdateTask(c)
+	})
 	return app
 }

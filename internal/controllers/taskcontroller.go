@@ -79,15 +79,32 @@ func NewTaskController(db database.Service) *taskController {
 }
 
 func (tc *taskController) GetAllTaskGroups(c *fiber.Ctx) error {
-	tc.db.UseGorm().Where("deprecated is false").Find(&taskGroups)
-	result, _ := json.Marshal(taskGroups)
-	return c.SendString(string(result))
+	if err := tc.db.UseGorm().Where("deprecated is false").Find(&taskGroups).Error; err != nil {
+		fmt.Printf("WARNING - all task groups, %v", err)
+		return c.SendString("Record not found")
+	}
+
+	if len(taskGroups) == 0 {
+		return c.SendString("No task group found! \n please create new task group")
+	} else {
+		result, _ := json.Marshal(taskGroups)
+		return c.SendString(string(result))
+	}
 }
 
 func (tc *taskController) GetAllTasks(c *fiber.Ctx) error {
-	tc.db.UseGorm().Where("deprecated is false").Find(&tasks)
-	result, _ := json.Marshal(tasks)
-	return c.SendString(string(result))
+
+	if err := tc.db.UseGorm().Where("deprecated is false").Find(&tasks).Error; err != nil {
+		fmt.Printf("WARNING - all tasks, %v", err)
+		return c.SendString("Record not found")
+	}
+
+	if len(tasks) == 0 {
+		return c.SendString("No task found! \n please create new task")
+	} else {
+		result, _ := json.Marshal(tasks)
+		return c.SendString(string(result))
+	}
 }
 
 func (tc *taskController) GetTaskGroup(c *fiber.Ctx) error {
@@ -96,7 +113,8 @@ func (tc *taskController) GetTaskGroup(c *fiber.Ctx) error {
 	}
 
 	if err := tc.db.UseGorm().First(&taskGroup).Error; err != nil {
-		return err
+		fmt.Printf("WARNING - task group, %v", err)
+		return c.SendString("Record not found")
 	}
 
 	result, _ := json.Marshal(&taskGroup)
@@ -109,7 +127,8 @@ func (tc *taskController) GetTask(c *fiber.Ctx) error {
 	}
 
 	if err := tc.db.UseGorm().First(&task).Error; err != nil {
-		return err
+		fmt.Printf("WARNING - task, %v", err)
+		return c.SendString("Record not found")
 	}
 
 	result, _ := json.Marshal(&task)
@@ -126,7 +145,8 @@ func (tc *taskController) GetAllTasksByTaskGroup(c *fiber.Ctx) error {
 		Joins("JOIN task_group_task ON task_group_task.task_id = task.task_id").
 		Where("task_group_task.task_group_id = ?", taskGroup.TaskGroupId).
 		Find(&task).Error; err != nil {
-		return err
+		fmt.Printf("WARNING - all tasks by task group, %v", err)
+		return c.SendString("Record not found")
 	}
 
 	result, _ := json.Marshal(&task)
@@ -135,13 +155,13 @@ func (tc *taskController) GetAllTasksByTaskGroup(c *fiber.Ctx) error {
 
 func (tc *taskController) UpdateTaskGroup(c *fiber.Ctx) error {
 	var updateTaskGroup struct {
-		taskGroup   models.TaskGroup
-		updateType  string
-		updateValue bool
+		taskGroup   models.TaskGroup `json:"update_task_group"`
+		updateType  string           `json:"update_type"`
+		updateValue bool             `json:"update_value"`
 	}
 
 	if err := c.BodyParser(&updateTaskGroup); err != nil {
-		return err
+		return c.SendString("Record not found")
 	}
 
 	// Type of Update (update, deprecated)
@@ -164,9 +184,9 @@ func (tc *taskController) UpdateTaskGroup(c *fiber.Ctx) error {
 
 func (tc *taskController) UpdateTask(c *fiber.Ctx) error {
 	var updateTask struct {
-		task        models.Task
-		updateType  string
-		updateValue bool
+		task        models.Task `json:"update_task"`
+		updateType  string      `json:"update_type"`
+		updateValue bool        `json:"update_value"`
 	}
 
 	if err := c.BodyParser(&updateTask); err != nil {
