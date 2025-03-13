@@ -17,6 +17,14 @@ type DayController interface {
 	// Get day by id or name
 	// return day
 	GetDay(c *fiber.Ctx) error
+
+	// Get repeats
+	// return all repeats
+	GetAllRepeats(c *fiber.Ctx) error
+
+	// Get repeat
+	// return repeat
+	GetRepeat(c *fiber.Ctx) error
 }
 
 var (
@@ -58,4 +66,12 @@ func (dc *dayController) GetDay(c *fiber.Ctx) error {
 
 	result, _ := json.Marshal(&day)
 	return c.SendString(string(result))
+}
+
+func (dc *dayController) GetAllRepeats(c *fiber.Ctx) error {
+
+}
+
+func (dc *dayController) GetRepeat(c *fiber.Ctx) error {
+
 }
