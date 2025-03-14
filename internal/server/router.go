@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/kevinhartarto/mytodolist/internal/controllers"
 	"github.com/kevinhartarto/mytodolist/internal/database"
+	"github.com/kevinhartarto/mytodolist/internal/utils"
 )
 
 func NewHandler(db database.Service) *fiber.App {
@@ -26,49 +27,24 @@ func NewHandler(db database.Service) *fiber.App {
 
 	// Tasks
 	list := controllers.NewTaskController(db)
-	day := controllers.NewDayController(db)
 	listAPI := v1.Group("/list")
+
 	listAPI.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
-
-	// GET
-	listAPI.Get("/", func(c *fiber.Ctx) error {
-		return list.GetAllTaskGroups(c)
-	})
 	listAPI.Get("/tasks", func(c *fiber.Ctx) error {
-		return list.GetAllTasks(c)
+		return list.GetTasks(c)
 	})
-	listAPI.Get("/groups", func(c *fiber.Ctx) error {
-		return list.GetTaskGroup(c)
+	listAPI.Get("/task/:uuid", func(c *fiber.Ctx) error {
+		uuid := utils.ParseUUID(c.Params("uuid"))
+		return list.GetTaskByUuid(uuid, c)
 	})
-	listAPI.Get("/task", func(c *fiber.Ctx) error {
-		return list.GetTask(c)
-	})
-	listAPI.Get("/group/tasks", func(c *fiber.Ctx) error {
-		return list.GetAllTasksByTaskGroup(c)
-	})
-	listAPI.Get("/days", func(c *fiber.Ctx) error {
-		return day.GetAllDays(c)
-	})
-	listAPI.Get("/day", func(c *fiber.Ctx) error {
-		return day.GetDay(c)
-	})
-
-	// POST
-	listAPI.Post("/task", func(c *fiber.Ctx) error {
-		return list.CreateTask(c)
-	})
-	listAPI.Post("/group", func(c *fiber.Ctx) error {
-		return list.CreateTaskGroup(c)
-	})
-
-	// PUT
-	listAPI.Put("/group/update", func(c *fiber.Ctx) error {
-		return list.UpdateTaskGroup(c)
-	})
-	listAPI.Put("/task/update", func(c *fiber.Ctx) error {
+	listAPI.Put("/task", func(c *fiber.Ctx) error {
 		return list.UpdateTask(c)
 	})
+	listAPI.Delete("/task", func(c *fiber.Ctx) error {
+		return list.TaskFinished(c)
+	})
+
 	return app
 }

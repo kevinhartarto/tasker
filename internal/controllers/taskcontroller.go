@@ -5,65 +5,39 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/kevinhartarto/mytodolist/internal/database"
 	"github.com/kevinhartarto/mytodolist/internal/models"
 	"github.com/kevinhartarto/mytodolist/internal/utils"
 )
 
 type TaskController interface {
+	CreateTask(fiber.Ctx) error
 
-	// Get all task groups
-	// return all active task groups
-	GetAllTaskGroups(c *fiber.Ctx) error
+	CreateRemainder(fiber.Ctx) error
 
-	// Get all tasks
-	// return all active tasks
-	GetAllTasks(c *fiber.Ctx) error
+	GetTasks() error
 
-	// Get task group
-	// return a task group by UUID
-	GetTaskGroup(c *fiber.Ctx) error
+	GetTasksByDay(fiber.Ctx) error
 
-	// Get task
-	// return a task by UUID
-	GetTask(c *fiber.Ctx) error
+	GetTasksByFrequency(fiber.Ctx) error
 
-	// Get all task in a task group
-	// return all tasks within a task group
-	GetAllTasksByTaskGroup(c *fiber.Ctx) error
+	GetTaskByUuid(uuid.UUID, fiber.Ctx) error
 
-	// Update a task group
-	// return status of update
-	UpdateTaskGroup(c *fiber.Ctx) error
+	GetReminder(fiber.Ctx) error
 
-	// Update a task
-	// return status of update
-	UpdateTask(c *fiber.Ctx) error
+	UpdateTask(fiber.Ctx) error
 
-	// Create a task
-	// return new task id
-	CreateTask(c *fiber.Ctx) error
+	UpdateRemainder(fiber.Ctx) error
 
-	// Create a task group
-	// return new task group id
-	CreateTaskGroup(c *fiber.Ctx) error
+	TaskFinished(fiber.Ctx) error
 }
-
-var (
-	taskInstance *taskController
-
-	taskGroups []models.TaskGroup
-	tasks      []models.Task
-
-	taskGroup models.TaskGroup
-	task      models.Task
-
-	affectedRows int64
-)
 
 type taskController struct {
 	db database.Service
 }
+
+var taskInstance *taskController
 
 func NewTaskController(db database.Service) *taskController {
 
@@ -78,164 +52,95 @@ func NewTaskController(db database.Service) *taskController {
 	return taskInstance
 }
 
-func (tc *taskController) GetAllTaskGroups(c *fiber.Ctx) error {
-	if err := tc.db.UseGorm().Where("deprecated is false").Find(&taskGroups).Error; err != nil {
-		fmt.Printf("WARNING - all task groups, %v", err)
-		return c.SendString("Record not found")
+func (tc *taskController) CreateTask(c *fiber.Ctx) error {
+	var newTask models.Task
+
+	if err := c.BodyParser(&newTask); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid JSON input",
+		})
 	}
 
-	if len(taskGroups) == 0 {
-		return c.SendString("No task group found! \n please create new task group")
+	newTask.TaskId = utils.GenerateNewUUID()
+
+	if !utils.ValidateTask(newTask) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Task name and id are required",
+		})
+	}
+
+	result := tc.db.UseGorm().Create(&newTask)
+
+	if result.Error != nil {
+		return result.Error
 	} else {
-		result, _ := json.Marshal(taskGroups)
-		return c.SendString(string(result))
+		message := fmt.Sprintf("Task %s (%v) created", newTask.Task, newTask.TaskId)
+		return c.Status(fiber.StatusCreated).SendString(message)
 	}
 }
 
-func (tc *taskController) GetAllTasks(c *fiber.Ctx) error {
+func (tc *taskController) GetTasks(c *fiber.Ctx) error {
+	var tasks []models.Task
 
-	if err := tc.db.UseGorm().Where("deprecated is false").Find(&tasks).Error; err != nil {
-		fmt.Printf("WARNING - all tasks, %v", err)
-		return c.SendString("Record not found")
-	}
+	result := tc.db.UseGorm().Where("NOT finished").Find(&tasks)
 
-	if len(tasks) == 0 {
-		return c.SendString("No task found! \n please create new task")
+	if result.Error != nil {
+		return result.Error
 	} else {
-		result, _ := json.Marshal(tasks)
-		return c.SendString(string(result))
+		message, _ := json.Marshal(tasks)
+		return c.Status(fiber.StatusOK).JSON(message)
 	}
 }
 
-func (tc *taskController) GetTaskGroup(c *fiber.Ctx) error {
-	if err := c.BodyParser(&taskGroup); err != nil {
-		return err
+func (tc *taskController) GetTaskByUuid(uuid uuid.UUID, c *fiber.Ctx) error {
+	var task models.Task
+	result := tc.db.UseGorm().Where("NOT finished").First(&task, uuid)
+
+	if result.Error != nil {
+		return result.Error
+	} else {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"task_id":     task.TaskId,
+			"task":        task.Task,
+			"description": task.Description,
+		})
 	}
-
-	if err := tc.db.UseGorm().First(&taskGroup).Error; err != nil {
-		fmt.Printf("WARNING - task group, %v", err)
-		return c.SendString("Record not found")
-	}
-
-	result, _ := json.Marshal(&taskGroup)
-	return c.SendString(string(result))
-}
-
-func (tc *taskController) GetTask(c *fiber.Ctx) error {
-	if err := c.BodyParser(&task); err != nil {
-		return err
-	}
-
-	if err := tc.db.UseGorm().First(&task).Error; err != nil {
-		fmt.Printf("WARNING - task, %v", err)
-		return c.SendString("Record not found")
-	}
-
-	result, _ := json.Marshal(&task)
-	return c.SendString(string(result))
-}
-
-func (tc *taskController) GetAllTasksByTaskGroup(c *fiber.Ctx) error {
-	if err := c.BodyParser(&taskGroup); err != nil {
-		return err
-	}
-
-	if err := tc.db.UseGorm().Table("task").
-		Select("task.*").
-		Joins("JOIN task_group_task ON task_group_task.task_id = task.task_id").
-		Where("task_group_task.task_group_id = ?", taskGroup.TaskGroupId).
-		Find(&task).Error; err != nil {
-		fmt.Printf("WARNING - all tasks by task group, %v", err)
-		return c.SendString("Record not found")
-	}
-
-	result, _ := json.Marshal(&task)
-	return c.SendString(string(result))
-}
-
-func (tc *taskController) UpdateTaskGroup(c *fiber.Ctx) error {
-	var updateTaskGroup struct {
-		taskGroup   models.TaskGroup `json:"update_task_group"`
-		updateType  string           `json:"update_type"`
-		updateValue bool             `json:"update_value"`
-	}
-
-	if err := c.BodyParser(&updateTaskGroup); err != nil {
-		return c.SendString("Record not found")
-	}
-
-	// Type of Update (update, deprecated)
-	switch updateTaskGroup.updateType {
-	case "update":
-		affectedRows = tc.db.UseGorm().Save(&updateTaskGroup.taskGroup).RowsAffected
-	case "deprecated":
-		affectedRows = tc.db.UseGorm().Model(&updateTaskGroup.taskGroup).
-			Update("deprecated", updateTaskGroup.updateValue).RowsAffected
-	}
-
-	// This is not a batch updates
-	// We're expect only 1 affected row
-	if affectedRows == 1 {
-		result, _ := json.Marshal(&updateTaskGroup.taskGroup)
-		return c.SendString(string(result))
-	}
-	return c.SendStatus(fiber.StatusBadRequest)
 }
 
 func (tc *taskController) UpdateTask(c *fiber.Ctx) error {
-	var updateTask struct {
-		task        models.Task `json:"update_task"`
-		updateType  string      `json:"update_type"`
-		updateValue bool        `json:"update_value"`
-	}
+	var task models.Task
 
-	if err := c.BodyParser(&updateTask); err != nil {
-		return err
-	}
-
-	// Type of Update (update, deprecated)
-	switch updateTask.updateType {
-	case "update":
-		affectedRows = tc.db.UseGorm().Save(&updateTask.task).RowsAffected
-	case "deprecated":
-		affectedRows = tc.db.UseGorm().Model(&updateTask.task).
-			Update("deprecated", updateTask.updateValue).RowsAffected
-	}
-
-	// This is not a batch updates
-	// We're expect only 1 affected row
-	if affectedRows == 1 {
-		result, _ := json.Marshal(&updateTask.task)
-		return c.SendString(string(result))
-	}
-	return c.SendStatus(fiber.StatusBadRequest)
-}
-
-func (tc *taskController) CreateTask(c *fiber.Ctx) error {
 	if err := c.BodyParser(&task); err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid JSON input",
+		})
 	}
 
-	task.TaskId, _ = utils.GenerateNewUUID()
+	result := tc.db.UseGorm().Save(&task)
 
-	if err := tc.db.UseGorm().Create(&task).Error; err != nil {
-		return err
+	if result.Error != nil {
+		return result.Error
+	} else {
+		message := fmt.Sprintf("Task %s (%v) updated", task.Task, task.TaskId)
+		return c.Status(fiber.StatusCreated).SendString(message)
 	}
-
-	response := fmt.Sprintf("Task (%v) created", task.TaskId)
-	return c.SendString(response)
 }
 
-func (tc *taskController) CreateTaskGroup(c *fiber.Ctx) error {
-	if err := c.BodyParser(&taskGroup); err != nil {
-		return err
-	}
-	taskGroup.TaskGroupId, _ = utils.GenerateNewUUID()
+func (tc *taskController) TaskFinished(c *fiber.Ctx) error {
+	var task models.Task
 
-	if err := tc.db.UseGorm().Create(&taskGroup).Error; err != nil {
-		return err
+	if err := c.BodyParser(&task); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid JSON input",
+		})
 	}
 
-	response := fmt.Sprintf("Task group (%v) created", taskGroup.TaskGroupId)
-	return c.SendString(response)
+	result := tc.db.UseGorm().Model(&task).Update("finished", true)
+
+	if result.Error != nil {
+		return result.Error
+	} else {
+		message := fmt.Sprintf("Task %s (%v) finished", task.Task, task.TaskId)
+		return c.Status(fiber.StatusCreated).SendString(message)
+	}
 }
