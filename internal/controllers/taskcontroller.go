@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +16,8 @@ type TaskController interface {
 	CreateRemainder(fiber.Ctx) error
 
 	GetTasks() error
+
+	GetFinishedTasks() error
 
 	GetTasksByDay(fiber.Ctx) error
 
@@ -87,14 +88,51 @@ func (tc *taskController) GetTasks(c *fiber.Ctx) error {
 	if result.Error != nil {
 		return result.Error
 	} else {
-		message, _ := json.Marshal(tasks)
-		return c.Status(fiber.StatusOK).JSON(message)
+		var response []map[string]interface{}
+		for _, task := range tasks {
+			response = append(response, map[string]interface{}{
+				"task_id":     task.TaskId,
+				"task":        task.Task,
+				"description": task.Description,
+			})
+		}
+
+		if response == nil {
+			return c.Status(fiber.StatusOK).SendString("tasks not found")
+		}
+
+		return c.Status(fiber.StatusOK).JSON(response)
+	}
+}
+
+func (tc *taskController) GetFinishedTasks(c *fiber.Ctx) error {
+	var tasks []models.Task
+
+	result := tc.db.UseGorm().Where("finished").Find(&tasks)
+
+	if result.Error != nil {
+		return result.Error
+	} else {
+		var response []map[string]interface{}
+		for _, task := range tasks {
+			response = append(response, map[string]interface{}{
+				"task_id":     task.TaskId,
+				"task":        task.Task,
+				"description": task.Description,
+			})
+		}
+
+		if response == nil {
+			return c.Status(fiber.StatusOK).SendString("tasks not found")
+		}
+
+		return c.Status(fiber.StatusOK).JSON(response)
 	}
 }
 
 func (tc *taskController) GetTaskByUuid(uuid uuid.UUID, c *fiber.Ctx) error {
 	var task models.Task
-	result := tc.db.UseGorm().Where("NOT finished").First(&task, uuid)
+	result := tc.db.UseGorm().First(&task, uuid)
 
 	if result.Error != nil {
 		return result.Error
@@ -103,6 +141,7 @@ func (tc *taskController) GetTaskByUuid(uuid uuid.UUID, c *fiber.Ctx) error {
 			"task_id":     task.TaskId,
 			"task":        task.Task,
 			"description": task.Description,
+			"finished":    task.Finished,
 		})
 	}
 }
@@ -116,7 +155,7 @@ func (tc *taskController) UpdateTask(c *fiber.Ctx) error {
 		})
 	}
 
-	result := tc.db.UseGorm().Save(&task)
+	result := tc.db.UseGorm().Where("task_id = ?", task.TaskId).Save(&task)
 
 	if result.Error != nil {
 		return result.Error
@@ -135,7 +174,7 @@ func (tc *taskController) TaskFinished(c *fiber.Ctx) error {
 		})
 	}
 
-	result := tc.db.UseGorm().Model(&task).Update("finished", true)
+	result := tc.db.UseGorm().Model(&task).Where("task_id = ?", task.TaskId).Update("finished", true)
 
 	if result.Error != nil {
 		return result.Error

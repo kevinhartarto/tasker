@@ -35,9 +35,15 @@ func NewHandler(db database.Service) *fiber.App {
 	listAPI.Get("/tasks", func(c *fiber.Ctx) error {
 		return list.GetTasks(c)
 	})
+	listAPI.Get("/tasks/finished", func(c *fiber.Ctx) error {
+		return list.GetFinishedTasks(c)
+	})
 	listAPI.Get("/task/:uuid", func(c *fiber.Ctx) error {
 		uuid := utils.ParseUUID(c.Params("uuid"))
 		return list.GetTaskByUuid(uuid, c)
+	})
+	listAPI.Post("/task", func(c *fiber.Ctx) error {
+		return list.CreateTask(c)
 	})
 	listAPI.Put("/task", func(c *fiber.Ctx) error {
 		return list.UpdateTask(c)
