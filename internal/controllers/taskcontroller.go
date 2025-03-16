@@ -13,8 +13,6 @@ import (
 type TaskController interface {
 	CreateTask(fiber.Ctx) error
 
-	CreateRemainder(fiber.Ctx) error
-
 	GetTasks() error
 
 	GetFinishedTasks() error
@@ -25,11 +23,7 @@ type TaskController interface {
 
 	GetTaskByUuid(uuid.UUID, fiber.Ctx) error
 
-	GetReminder(fiber.Ctx) error
-
 	UpdateTask(fiber.Ctx) error
-
-	UpdateRemainder(fiber.Ctx) error
 
 	TaskFinished(fiber.Ctx) error
 }
@@ -98,7 +92,7 @@ func (tc *taskController) GetTasks(c *fiber.Ctx) error {
 		}
 
 		if response == nil {
-			return c.Status(fiber.StatusOK).SendString("tasks not found")
+			return c.Status(fiber.StatusOK).SendString("Tasks not found")
 		}
 
 		return c.Status(fiber.StatusOK).JSON(response)
@@ -123,7 +117,7 @@ func (tc *taskController) GetFinishedTasks(c *fiber.Ctx) error {
 		}
 
 		if response == nil {
-			return c.Status(fiber.StatusOK).SendString("tasks not found")
+			return c.Status(fiber.StatusOK).SendString("Tasks not found")
 		}
 
 		return c.Status(fiber.StatusOK).JSON(response)

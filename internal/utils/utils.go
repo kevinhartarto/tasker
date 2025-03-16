@@ -38,3 +38,19 @@ func ValidateTask(task models.Task) bool {
 
 	return true
 }
+
+func ValidateReminder(reminder models.Reminder) bool {
+	if reminder.Reminder == "" {
+		return false
+	}
+
+	if reminder.TaskId == uuid.Nil {
+		return false
+	}
+
+	if reminder.StartTime.IsZero() {
+		return false
+	}
+
+	return true
+}
