@@ -25,7 +25,7 @@ type Reminder struct {
 	RepeatDays        []string  `json:"repeat_days" gorm:"type:text"`
 	RepeatSameday     bool      `json:"repeat_sameday"`
 	RepeatUntil       time.Time `json:"repeat_until"`
-	Interval          int       `json:"inteval"`
+	Interval          int       `json:"interval"`
 	IntervalInMinutes int       `json:"interval_in_minutes"`
 	CreatedAt         time.Time `json:"created"`
 	UpdatedAt         time.Time `json:"updated"`

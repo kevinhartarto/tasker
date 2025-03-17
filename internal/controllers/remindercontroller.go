@@ -50,13 +50,19 @@ func (rc *reminderController) CreateRemainder(c *fiber.Ctx) error {
 		})
 	}
 
+	newReminder.ReminderId = utils.GenerateNewUUID()
 	if newReminder.StartTime.IsZero() {
 		newReminder.StartTime = time.Now()
 	}
 
+	if newReminder.RepeatUntil.IsZero() {
+		// FIXME
+		newReminder.RepeatUntil = time.Now()
+	}
+
 	if !utils.ValidateReminder(newReminder) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Task name and id are required",
+			"error": "Reminder name, id, start time and task id are required",
 		})
 	}
 
@@ -153,6 +159,7 @@ func (rc *reminderController) GetReminderByTaskUuid(uuid uuid.UUID, c *fiber.Ctx
 
 func (rc *reminderController) UpdateTask(c *fiber.Ctx) error {
 	var reminder models.Reminder
+	var oldReminder models.Reminder
 
 	if err := c.BodyParser(&reminder); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -160,7 +167,11 @@ func (rc *reminderController) UpdateTask(c *fiber.Ctx) error {
 		})
 	}
 
-	result := rc.db.UseGorm().Where("reminder_id = ? and task_id = ?",
+	oldReminder.ReminderId = reminder.ReminderId
+	result := rc.db.UseGorm().Find(&oldReminder)
+	reminder = utils.CheckIfAnyValueChanged(reminder, oldReminder)
+
+	result = rc.db.UseGorm().Where("reminder_id = ? and task_id = ?",
 		reminder.ReminderId, reminder.TaskId).Save(&reminder)
 
 	if result.Error != nil {
