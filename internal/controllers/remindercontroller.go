@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -53,11 +54,6 @@ func (rc *reminderController) CreateRemainder(c *fiber.Ctx) error {
 	newReminder.ReminderId = utils.GenerateNewUUID()
 	if newReminder.StartTime.IsZero() {
 		newReminder.StartTime = time.Now()
-	}
-
-	if newReminder.RepeatUntil.IsZero() {
-		// FIXME
-		newReminder.RepeatUntil = time.Now()
 	}
 
 	if !utils.ValidateReminder(newReminder) {
@@ -157,22 +153,16 @@ func (rc *reminderController) GetReminderByTaskUuid(uuid uuid.UUID, c *fiber.Ctx
 	}
 }
 
-func (rc *reminderController) UpdateTask(c *fiber.Ctx) error {
+func (rc *reminderController) UpdateRemainder(c *fiber.Ctx) error {
 	var reminder models.Reminder
-	var oldReminder models.Reminder
+	var data map[string]interface{}
 
-	if err := c.BodyParser(&reminder); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid JSON input",
-		})
+	if err := json.Unmarshal(c.Body(), &data); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
 	}
 
-	oldReminder.ReminderId = reminder.ReminderId
-	result := rc.db.UseGorm().Find(&oldReminder)
-	reminder = utils.CheckIfAnyValueChanged(reminder, oldReminder)
-
-	result = rc.db.UseGorm().Where("reminder_id = ? and task_id = ?",
-		reminder.ReminderId, reminder.TaskId).Save(&reminder)
+	rc.db.UseGorm().Model(&reminder).Where("reminder_id = ?", data["reminder_id"]).Updates(data)
+	result := rc.db.UseGorm().Where("reminder_id = ?", data["reminder_id"]).First(&reminder)
 
 	if result.Error != nil {
 		return result.Error

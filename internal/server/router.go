@@ -71,7 +71,7 @@ func NewHandler(db database.Service) *fiber.App {
 		return reminder.CreateRemainder(c)
 	})
 	listAPI.Put("/reminder", func(c *fiber.Ctx) error {
-		return reminder.UpdateTask(c)
+		return reminder.UpdateRemainder(c)
 	})
 
 	return app

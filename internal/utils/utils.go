@@ -58,15 +58,3 @@ func ValidateReminder(reminder models.Reminder) bool {
 
 	return true
 }
-
-func CheckIfAnyValueChanged(newReminder models.Reminder, oldReminder models.Reminder) models.Reminder {
-	if newReminder.StartTime.IsZero() {
-		newReminder.StartTime = oldReminder.StartTime
-	}
-
-	if newReminder.RepeatUntil.IsZero() {
-		newReminder.RepeatUntil = oldReminder.RepeatUntil
-	}
-
-	return newReminder
-}
