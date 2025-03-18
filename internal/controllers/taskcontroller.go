@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -138,6 +139,60 @@ func (tc *taskController) GetTaskByUuid(uuid uuid.UUID, c *fiber.Ctx) error {
 			"finished":    task.Finished,
 		})
 	}
+}
+
+func (tc *taskController) GetTasksByDay(c *fiber.Ctx) error {
+	type Result struct {
+		taskId      uuid.UUID
+		task        string
+		description string
+		finished    bool
+	}
+
+	var data map[string]interface{}
+	var result Result
+
+	if err := json.Unmarshal(c.Body(), &data); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
+	}
+
+	tc.db.UseGorm().Model(&models.Task{}).
+		Select("task.task_id, task.task, task.description, task.finished").
+		Joins("join reminder using (task_id)").Where("reminder.repeat_days in ?", data).Scan(&result)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"task_id":     result.taskId,
+		"task":        result.task,
+		"description": result.description,
+		"finished":    result.finished,
+	})
+}
+
+func (tc *taskController) GetTasksByFrequency(c *fiber.Ctx) error {
+	type Result struct {
+		taskId      uuid.UUID
+		task        string
+		description string
+		finished    bool
+	}
+
+	var data map[string]interface{}
+	var result Result
+
+	if err := json.Unmarshal(c.Body(), &data); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
+	}
+
+	tc.db.UseGorm().Model(&models.Task{}).
+		Select("task.task_id, task.task, task.description, task.finished").
+		Joins("join reminder using (task_id)").Where("reminder.frequency in ?", data).Scan(&result)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"task_id":     result.taskId,
+		"task":        result.task,
+		"description": result.description,
+		"finished":    result.finished,
+	})
 }
 
 func (tc *taskController) UpdateTask(c *fiber.Ctx) error {

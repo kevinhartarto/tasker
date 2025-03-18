@@ -1,0 +1,11 @@
+networks:
+  default:
+ 
+services:
+  tasker:
+    image: dev_tasker
+    container_name: dev-tasker
+    env_file:
+      - .env
+    ports:
+      - "3030:3030"

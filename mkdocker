@@ -1,0 +1,14 @@
+#!/bin/bash
+
+build_name="dev_tasker"
+
+# Build the Docker image
+docker build -t $build_name .
+
+# Check if the build was successful
+if [[ $? -eq 0 ]]; then
+    echo "Docker image '$build_name' built successfully."
+else
+    echo "Failed to build the Docker image."
+    exit 1
+fi

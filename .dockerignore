@@ -1,0 +1,7 @@
+.gitignore
+.env
+README.md
+server.log
+mkdocker
+bin/
+tests/
