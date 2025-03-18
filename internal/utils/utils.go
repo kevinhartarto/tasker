@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/kevinhartarto/mytodolist/internal/models"
+	"github.com/kevinhartarto/tasker/internal/models"
 )
 
 func GenerateNewUUID() uuid.UUID {

@@ -1,4 +1,4 @@
-module github.com/kevinhartarto/mytodolist
+module github.com/kevinhartarto/tasker
 
 go 1.23.3
 

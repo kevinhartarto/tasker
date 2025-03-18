@@ -7,8 +7,8 @@ import (
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/kevinhartarto/mytodolist/internal/database"
-	"github.com/kevinhartarto/mytodolist/internal/server"
+	"github.com/kevinhartarto/tasker/internal/database"
+	"github.com/kevinhartarto/tasker/internal/server"
 )
 
 var ctx = context.Background

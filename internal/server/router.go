@@ -5,9 +5,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/kevinhartarto/mytodolist/internal/controllers"
-	"github.com/kevinhartarto/mytodolist/internal/database"
-	"github.com/kevinhartarto/mytodolist/internal/utils"
+	"github.com/kevinhartarto/tasker/internal/controllers"
+	"github.com/kevinhartarto/tasker/internal/database"
+	"github.com/kevinhartarto/tasker/internal/utils"
 )
 
 func NewHandler(db database.Service) *fiber.App {

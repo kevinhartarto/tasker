@@ -7,9 +7,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/kevinhartarto/mytodolist/internal/database"
-	"github.com/kevinhartarto/mytodolist/internal/models"
-	"github.com/kevinhartarto/mytodolist/internal/utils"
+	"github.com/kevinhartarto/tasker/internal/database"
+	"github.com/kevinhartarto/tasker/internal/models"
+	"github.com/kevinhartarto/tasker/internal/utils"
 )
 
 type ReminderController interface {
