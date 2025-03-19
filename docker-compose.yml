@@ -1,6 +1,3 @@
-networks:
-  default:
- 
 services:
   tasker:
     image: dev_tasker
@@ -9,3 +6,9 @@ services:
       - .env
     ports:
       - "3030:3030"
+    networks:
+      - forge_highway
+
+networks:
+  forge_highway:
+    external: true
