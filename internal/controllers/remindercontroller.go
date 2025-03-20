@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gen2brain/beeep"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/kevinhartarto/tasker/internal/database"
@@ -13,15 +14,34 @@ import (
 )
 
 type ReminderController interface {
+
+	// Create a reminder for a task
+	// return reminder name and uuid
 	CreateRemainder(fiber.Ctx) error
 
+	// Query all reminders
+	// return an array of all reminders
 	GetAllReminders(fiber.Ctx) error
 
+	// Query a reminder by reminder UUID
+	// return a reminder details
 	GetReminderByUuid(uuid.UUID, fiber.Ctx) error
 
+	// Query a reminder by task UUID
+	// return a reminder details
 	GetReminderByTaskUuid(uuid.UUID, fiber.Ctx) error
 
+	// Update a reminder
 	UpdateRemainder(fiber.Ctx) error
+
+	// Evaluate if a reminder is due
+	// return bool
+	// false	- date is not in reminder schedule
+	// true		- date is in reminder schedule
+	CheckReminder(models.Reminder) bool
+
+	// Send a notification to windows desktop
+	SendWindowNotification(models.Reminder)
 }
 
 type reminderController struct {
@@ -170,5 +190,27 @@ func (rc *reminderController) UpdateRemainder(c *fiber.Ctx) error {
 		message := fmt.Sprintf("Reminder %s (%v) for task (%v) updated",
 			reminder.Reminder, reminder.ReminderId, reminder.TaskId)
 		return c.Status(fiber.StatusCreated).SendString(message)
+	}
+}
+
+func (rc *reminderController) CheckReminder(reminder *models.Reminder) bool {
+	currentDate := time.Now()
+
+	if reminder.RepeatSameday && reminder.IntervalInMinutes != nil {
+
+	}
+
+	if currentDate.YearDay() == reminder.NextReminder.YearDay() {
+		return true
+	}
+
+	return false
+}
+
+func (rc *reminderController) SendWindowNotification(reminder *models.Reminder) {
+	notificationIcon := "assets/tasker.png"
+	err := beeep.Notify(reminder.Reminder, reminder.Description, notificationIcon)
+	if err != nil {
+		fmt.Println(err)
 	}
 }

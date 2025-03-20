@@ -27,7 +27,7 @@ type Reminder struct {
 	RepeatUntil       *time.Time `json:"repeat_until"`
 	Interval          *int       `json:"interval"`
 	IntervalInMinutes *int       `json:"interval_in_minutes"`
-	LastReminder      *time.Time `json:"last_reminder"`
+	NextReminder      *time.Time `json:"next_reminder"`
 	CreatedAt         time.Time  `json:"created"`
 	UpdatedAt         time.Time  `json:"updated"`
 }

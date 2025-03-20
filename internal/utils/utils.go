@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/kevinhartarto/tasker/internal/models"
@@ -56,5 +57,25 @@ func ValidateReminder(reminder models.Reminder) bool {
 		return false
 	}
 
-	return true
+	if reminder.Frequency == "" {
+		return false
+	}
+
+	days := []string{"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+	switch reminder.Frequency {
+	case "n":
+	case "d", "w", "m", "y":
+		if reminder.Interval == nil {
+			return false
+		}
+	case "s":
+		for _, day := range reminder.RepeatDays {
+			if valid := slices.Contains(days, day); !valid {
+				return false
+			}
+		}
+	}
+
+	return !reminder.NextReminder.IsZero()
+
 }

@@ -12,20 +12,35 @@ import (
 )
 
 type TaskController interface {
+
+	// Create a task
+	// return task name and uuid
 	CreateTask(fiber.Ctx) error
 
+	// Query all unfinished tasks
+	// return an array of unfinished tasks
 	GetTasks() error
 
+	// Query all finished tasks
+	// return an array of finished tasks
 	GetFinishedTasks() error
 
+	// Query all tasks group by day
+	// return an array of tasks group by day
 	GetTasksByDay(fiber.Ctx) error
 
+	// Query all tasks group by frequency
+	// return an array of tasks group by frequency
 	GetTasksByFrequency(fiber.Ctx) error
 
+	// Query a task by uuid
+	// return task details
 	GetTaskByUuid(uuid.UUID, fiber.Ctx) error
 
+	// Update a task
 	UpdateTask(fiber.Ctx) error
 
+	// Change task status to finished
 	TaskFinished(fiber.Ctx) error
 }
 
