@@ -3,90 +3,103 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/kevinhartarto/tasker/internal/logger"
+	"github.com/kevinhartarto/tasker/internal/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
-type Service interface {
+type Database interface {
 
 	// Close terminates the database connection.
 	// It returns an error if connection cannot be closed.
-	Close() error
+	Close()
 
 	// Get active GORM connection
 	// Return an active GORM connection
-	UseGorm() *gorm.DB
+	Gorm() *gorm.DB
 }
 
-type service struct {
-	sqlDB  *sql.DB
-	gormDB *gorm.DB
+type database struct {
+	connection *sql.DB
+	gorm       *gorm.DB
 }
 
 var (
-	database   = os.Getenv("DB_DATABASE")
-	username   = os.Getenv("DB_USERNAME")
-	password   = os.Getenv("DB_PASSWORD")
-	port       = os.Getenv("DB_PORT")
-	host       = os.Getenv("DB_HOST")
-	dbInstance *service
+	gormService *database
+	log         = logger.GetLogger()
 )
 
-func StartDB() Service {
+func Start() Database {
 	// Keep the connection alive
-	if dbInstance != nil {
-		return dbInstance
+	if gormService != nil {
+		return gormService
 	}
 
-	credential := fmt.Sprintf("%v:%v", username, password)
-	databaseUrl := fmt.Sprintf("%v:%v/%v", host, port, database)
-	connOptions := fmt.Sprintf("%v", "sslmode=disable")
-	conn := fmt.Sprintf("postgres://%v@%v?%v", credential, databaseUrl, connOptions)
-
-	sqlDB, err := sql.Open("pgx", conn)
+	pgx, err := sql.Open("pgx", getDBConnection())
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Failed to establish database connection, closing...", "message: ", err)
+		pgx.Close()
+		os.Exit(1)
 	}
 
 	// Initialize GORM
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: sqlDB,
-	}), &gorm.Config{
+	taskerDialector := postgres.New(postgres.Config{
+		Conn: pgx,
+	})
+
+	taskerConfig := gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   "tasker.",
 			SingularTable: true,
 		},
-	})
+	}
+
+	gormDB, err := gorm.Open(taskerDialector, &taskerConfig)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Failed to initialize GORM, closing...", "message: ", err)
+		pgx.Close()
+		os.Exit(1)
 	}
 
-	// Ping to check if the connection is still alive
-	if err = sqlDB.Ping(); err != nil {
-		log.Println("Database connection lost")
-		log.Fatal(err)
+	gormService = &database{
+		connection: pgx,
+		gorm:       gormDB,
 	}
 
-	dbInstance = &service{
-		sqlDB:  sqlDB,
-		gormDB: gormDB,
-	}
-
-	fmt.Println("Database connection established.")
-
-	return dbInstance
+	log.Info("Database connection established, GORM is running")
+	return gormService
 }
 
-func (s *service) UseGorm() *gorm.DB {
-	return s.gormDB
+func (db *database) Gorm() *gorm.DB {
+	return db.gorm
 }
 
-func (s *service) Close() error {
-	log.Printf("Disconnected from database: %s", database)
-	return s.sqlDB.Close()
+func (db *database) Close() {
+	log.Info("Closing database connection.")
+	if gormService != nil {
+		if err := gormService.connection.Close(); err != nil {
+			log.Info("Database close error", "message: ", err)
+		} else {
+			log.Info("Database connection closed.")
+		}
+	}
+}
+
+func getDBConnection() string {
+	database := utils.GetEnvOrDefault("DB_DATABASE", "devstack")
+	username := utils.GetEnvOrDefault("DB_USERNAME", "developer")
+	password := utils.GetEnvOrDefault("DB_PASSWORD", "localDevstack01")
+	port := utils.GetEnvOrDefault("DB_PORT", "5432")
+	host := utils.GetEnvOrDefault("DB_HOST", "postgres")
+	ssl := utils.GetEnvOrDefault("SSL_MODE", "disable")
+
+	credential := fmt.Sprintf("%v:%v", username, password)
+	databaseAddr := fmt.Sprintf("%v:%v/%v", host, port, database)
+	connOptions := fmt.Sprintf("sslmode=%v", ssl)
+	return fmt.Sprintf("postgres://%v@%v?%v", credential, databaseAddr, connOptions)
 }

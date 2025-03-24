@@ -45,12 +45,12 @@ type ReminderController interface {
 }
 
 type reminderController struct {
-	db database.Service
+	db database.Database
 }
 
 var reminderInstance *reminderController
 
-func NewReminderController(db database.Service) *reminderController {
+func NewReminderController(db database.Database) *reminderController {
 	if reminderInstance != nil {
 		return reminderInstance
 	}
@@ -82,7 +82,7 @@ func (rc *reminderController) CreateRemainder(c *fiber.Ctx) error {
 		})
 	}
 
-	result := rc.db.UseGorm().Create(&newReminder)
+	result := rc.db.Gorm().Create(&newReminder)
 
 	if result.Error != nil {
 		return result.Error
@@ -95,7 +95,7 @@ func (rc *reminderController) CreateRemainder(c *fiber.Ctx) error {
 
 func (rc *reminderController) GetAllReminders(c *fiber.Ctx) error {
 	var reminders []models.Reminder
-	result := rc.db.UseGorm().Find(&reminders)
+	result := rc.db.Gorm().Find(&reminders)
 
 	if result.Error != nil {
 		return result.Error
@@ -127,7 +127,7 @@ func (rc *reminderController) GetAllReminders(c *fiber.Ctx) error {
 
 func (rc *reminderController) GetReminderByUuid(uuid uuid.UUID, c *fiber.Ctx) error {
 	var reminder models.Reminder
-	result := rc.db.UseGorm().First(&reminder, uuid)
+	result := rc.db.Gorm().First(&reminder, uuid)
 
 	if result.Error != nil {
 		return result.Error
@@ -151,7 +151,7 @@ func (rc *reminderController) GetReminderByUuid(uuid uuid.UUID, c *fiber.Ctx) er
 
 func (rc *reminderController) GetReminderByTaskUuid(uuid uuid.UUID, c *fiber.Ctx) error {
 	var reminder models.Reminder
-	result := rc.db.UseGorm().Where("task_id = ?", uuid).First(&reminder)
+	result := rc.db.Gorm().Where("task_id = ?", uuid).First(&reminder)
 
 	if result.Error != nil {
 		return result.Error
@@ -181,8 +181,8 @@ func (rc *reminderController) UpdateRemainder(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
 	}
 
-	rc.db.UseGorm().Model(&reminder).Where("reminder_id = ?", data["reminder_id"]).Updates(data)
-	result := rc.db.UseGorm().Where("reminder_id = ?", data["reminder_id"]).First(&reminder)
+	rc.db.Gorm().Model(&reminder).Where("reminder_id = ?", data["reminder_id"]).Updates(data)
+	result := rc.db.Gorm().Where("reminder_id = ?", data["reminder_id"]).First(&reminder)
 
 	if result.Error != nil {
 		return result.Error

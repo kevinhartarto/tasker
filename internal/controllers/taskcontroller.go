@@ -45,12 +45,12 @@ type TaskController interface {
 }
 
 type taskController struct {
-	db database.Service
+	db database.Database
 }
 
 var taskInstance *taskController
 
-func NewTaskController(db database.Service) *taskController {
+func NewTaskController(db database.Database) *taskController {
 
 	if taskInstance != nil {
 		return taskInstance
@@ -80,7 +80,7 @@ func (tc *taskController) CreateTask(c *fiber.Ctx) error {
 		})
 	}
 
-	result := tc.db.UseGorm().Create(&newTask)
+	result := tc.db.Gorm().Create(&newTask)
 
 	if result.Error != nil {
 		return result.Error
@@ -93,7 +93,7 @@ func (tc *taskController) CreateTask(c *fiber.Ctx) error {
 func (tc *taskController) GetTasks(c *fiber.Ctx) error {
 	var tasks []models.Task
 
-	result := tc.db.UseGorm().Where("NOT finished").Find(&tasks)
+	result := tc.db.Gorm().Where("NOT finished").Find(&tasks)
 
 	if result.Error != nil {
 		return result.Error
@@ -118,7 +118,7 @@ func (tc *taskController) GetTasks(c *fiber.Ctx) error {
 func (tc *taskController) GetFinishedTasks(c *fiber.Ctx) error {
 	var tasks []models.Task
 
-	result := tc.db.UseGorm().Where("finished").Find(&tasks)
+	result := tc.db.Gorm().Where("finished").Find(&tasks)
 
 	if result.Error != nil {
 		return result.Error
@@ -142,7 +142,7 @@ func (tc *taskController) GetFinishedTasks(c *fiber.Ctx) error {
 
 func (tc *taskController) GetTaskByUuid(uuid uuid.UUID, c *fiber.Ctx) error {
 	var task models.Task
-	result := tc.db.UseGorm().First(&task, uuid)
+	result := tc.db.Gorm().First(&task, uuid)
 
 	if result.Error != nil {
 		return result.Error
@@ -171,7 +171,7 @@ func (tc *taskController) GetTasksByDay(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
 	}
 
-	tc.db.UseGorm().Model(&models.Task{}).
+	tc.db.Gorm().Model(&models.Task{}).
 		Select("task.task_id, task.task, task.description, task.finished").
 		Joins("join reminder using (task_id)").Where("reminder.repeat_days in ?", data).Scan(&result)
 
@@ -198,7 +198,7 @@ func (tc *taskController) GetTasksByFrequency(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
 	}
 
-	tc.db.UseGorm().Model(&models.Task{}).
+	tc.db.Gorm().Model(&models.Task{}).
 		Select("task.task_id, task.task, task.description, task.finished").
 		Joins("join reminder using (task_id)").Where("reminder.frequency in ?", data).Scan(&result)
 
@@ -219,7 +219,7 @@ func (tc *taskController) UpdateTask(c *fiber.Ctx) error {
 		})
 	}
 
-	result := tc.db.UseGorm().Where("task_id = ?", task.TaskId).Save(&task)
+	result := tc.db.Gorm().Where("task_id = ?", task.TaskId).Save(&task)
 
 	if result.Error != nil {
 		return result.Error
@@ -238,7 +238,7 @@ func (tc *taskController) TaskFinished(c *fiber.Ctx) error {
 		})
 	}
 
-	result := tc.db.UseGorm().Model(&task).Where("task_id = ?", task.TaskId).Update("finished", true)
+	result := tc.db.Gorm().Model(&task).Where("task_id = ?", task.TaskId).Update("finished", true)
 
 	if result.Error != nil {
 		return result.Error

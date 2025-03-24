@@ -2,11 +2,21 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"slices"
 
 	"github.com/google/uuid"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/kevinhartarto/tasker/internal/models"
 )
+
+func GetEnvOrDefault(envName string, defaultValue string) any {
+	if envValue := os.Getenv(envName); envValue != "" {
+		return envValue
+	}
+
+	return defaultValue
+}
 
 func GenerateNewUUID() uuid.UUID {
 	newUUID, err := uuid.NewUUID()
@@ -57,6 +67,11 @@ func ValidateReminder(reminder models.Reminder) bool {
 		return false
 	}
 
+	return ValidateReminderFrequencyAndNextReminder(reminder)
+}
+
+func ValidateReminderFrequencyAndNextReminder(reminder models.Reminder) bool {
+
 	if reminder.Frequency == "" {
 		return false
 	}
@@ -76,6 +91,5 @@ func ValidateReminder(reminder models.Reminder) bool {
 		}
 	}
 
-	return !reminder.NextReminder.IsZero()
-
+	return true
 }

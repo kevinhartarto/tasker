@@ -1,22 +1,35 @@
 package server
 
 import (
+	"log"
+	"os"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/kevinhartarto/tasker/internal/controllers"
 	"github.com/kevinhartarto/tasker/internal/database"
 	"github.com/kevinhartarto/tasker/internal/utils"
 )
 
-func NewHandler(db database.Service) *fiber.App {
+func NewHandler(database database.Database) *fiber.App {
 
 	app := fiber.New()
 	app.Use(healthcheck.New())
-	app.Use(logger.New())
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
+	app.Use(cors.New(getCorsConfig()))
+
+	logFile, err := os.OpenFile("api.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer logFile.Close()
+
+	app.Use(logger.New(logger.Config{
+		Format:   "${pid} ${locals:requestid} ${status} - ${method} ${path} | ${body}​\n",
+		TimeZone: "Local",
+		Output:   logFile,
 	}))
 
 	// API groups
@@ -24,9 +37,12 @@ func NewHandler(db database.Service) *fiber.App {
 
 	// Version 1
 	v1 := api.Group("/v1")
+	v1.Get("/metrics", monitor.New(monitor.Config{
+		Title: "Tasker Metrics Page",
+	}))
 
 	// Tasker APIs
-	list := controllers.NewTaskController(db)
+	list := controllers.NewTaskController(database)
 	listAPI := v1.Group("/list")
 
 	listAPI.Get("/ping", func(c *fiber.Ctx) error {
@@ -55,7 +71,7 @@ func NewHandler(db database.Service) *fiber.App {
 	})
 
 	// Reminders
-	reminder := controllers.NewReminderController(db)
+	reminder := controllers.NewReminderController(database)
 	listAPI.Get("/reminders", func(c *fiber.Ctx) error {
 		return reminder.GetAllReminders(c)
 	})
@@ -75,4 +91,13 @@ func NewHandler(db database.Service) *fiber.App {
 	})
 
 	return app
+}
+
+func getCorsConfig() cors.Config {
+
+	localConfig := cors.Config{
+		AllowOrigins: "*",
+	}
+
+	return localConfig
 }
