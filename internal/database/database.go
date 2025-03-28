@@ -95,7 +95,7 @@ func getDBConnection() string {
 	username := utils.GetEnvOrDefault("DB_USERNAME", "developer")
 	password := utils.GetEnvOrDefault("DB_PASSWORD", "localDevstack01")
 	port := utils.GetEnvOrDefault("DB_PORT", "5432")
-	host := utils.GetEnvOrDefault("DB_HOST", "postgres")
+	host := utils.GetEnvOrDefault("DB_HOST", "localhost")
 	ssl := utils.GetEnvOrDefault("SSL_MODE", "disable")
 
 	credential := fmt.Sprintf("%v:%v", username, password)

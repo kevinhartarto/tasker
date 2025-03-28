@@ -3,28 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/kevinhartarto/tasker/internal/database"
 	"github.com/kevinhartarto/tasker/internal/logger"
 	"github.com/kevinhartarto/tasker/internal/server"
 	"github.com/kevinhartarto/tasker/internal/utils"
 )
 
-func main() {
-	mainGroup := slog.Group(
-		"environment",
-		"stage", utils.GetEnvOrDefault("STAGE", "DEV"),
-		"service", "tasker",
-	)
-	log := logger.GetLogger().With(mainGroup)
+var log = logger.GetLogger()
 
+func main() {
 	// Instances
 	gorm := database.Start()
 	log.Info("Tasker connection with database established.")
@@ -33,14 +26,12 @@ func main() {
 
 	apiPort := utils.GetEnvOrDefault("PORT_API", "3030")
 	apiAddr := fmt.Sprintf(":%v", apiPort)
-	appErr := app.Listen(apiAddr)
-	if appErr != nil {
-		log.Error("Failed to start tasker, exiting...")
+
+	log.Info("Running Tasker server", "Port", apiAddr)
+	if appErr := app.Listen(apiAddr); appErr != nil {
+		log.Error("Failed to start Tasker, exiting...")
 		closeApp(app, gorm)
 	}
-
-	log.Info(fmt.Sprintf("Server listening on http://localhost%s", apiAddr))
-	log.Info("Tasker started and running.")
 }
 
 func closeApp(app *fiber.App, gorm database.Database) {
@@ -60,6 +51,5 @@ func closeApp(app *fiber.App, gorm database.Database) {
 
 	// Closing database connection
 	gorm.Close()
-
 	log.Info("Tasker shutdown complete.")
 }

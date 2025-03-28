@@ -14,20 +14,28 @@ import (
 	"github.com/kevinhartarto/tasker/internal/utils"
 )
 
+func getCorsConfig() cors.Config {
+
+	localConfig := cors.Config{
+		AllowOrigins: "*",
+	}
+
+	return localConfig
+}
+
 func NewHandler(database database.Database) *fiber.App {
 
 	app := fiber.New()
 	app.Use(healthcheck.New())
 	app.Use(cors.New(getCorsConfig()))
 
-	logFile, err := os.OpenFile("api.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile("api.log", os.O_RDWR|os.O_SYNC|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
-	defer logFile.Close()
 
 	app.Use(logger.New(logger.Config{
-		Format:   "${pid} ${locals:requestid} ${status} - ${method} ${path} | ${body}​\n",
+		Format:   "[${time}-${pid}] (${ip}) ${status} - ${method} ${path} | ${body}​\n",
 		TimeZone: "Local",
 		Output:   logFile,
 	}))
@@ -91,13 +99,4 @@ func NewHandler(database database.Database) *fiber.App {
 	})
 
 	return app
-}
-
-func getCorsConfig() cors.Config {
-
-	localConfig := cors.Config{
-		AllowOrigins: "*",
-	}
-
-	return localConfig
 }
