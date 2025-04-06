@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/joho/godotenv/autoload"
@@ -67,29 +68,67 @@ func ValidateReminder(reminder models.Reminder) bool {
 		return false
 	}
 
-	return ValidateReminderFrequencyAndNextReminder(reminder)
-}
-
-func ValidateReminderFrequencyAndNextReminder(reminder models.Reminder) bool {
-
 	if reminder.Frequency == "" {
 		return false
-	}
-
-	days := []string{"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
-	switch reminder.Frequency {
-	case "n":
-	case "d", "w", "m", "y":
-		if reminder.Interval == nil {
-			return false
-		}
-	case "s":
-		for _, day := range reminder.RepeatDays {
-			if valid := slices.Contains(days, day); !valid {
+	} else {
+		switch reminder.Frequency {
+		// Same day reminder
+		case "n":
+			if reminder.RepeatSameday {
+				// need to have interval in minutes
+				// or must not more than 1 day (1440 minutes)
+				if reminder.Interval != nil ||
+					reminder.IntervalInMinutes == nil ||
+					*reminder.IntervalInMinutes >= 1440 {
+					return false
+				}
+				// check next reminder
+				return ValidateNextReminder(reminder)
+			}
+		case "d", "w", "m", "y":
+			if !validateFrequenctTypeRepeats(reminder) {
 				return false
 			}
+			// check next reminder
+			return ValidateNextReminder(reminder)
+		case "s":
+			days := []string{"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+			valid := false
+			for _, day := range reminder.RepeatDays {
+				valid = slices.Contains(days, day)
+			}
+
+			if !validateFrequenctTypeRepeats(reminder) || !valid {
+				return false
+			}
+			// check next reminder
+			return ValidateNextReminder(reminder)
 		}
 	}
-
 	return true
+}
+
+func validateFrequenctTypeRepeats(reminder models.Reminder) bool {
+	if reminder.Interval == nil ||
+		reminder.RepeatSameday ||
+		reminder.IntervalInMinutes != nil ||
+		reminder.RepeatUntil.IsZero() ||
+		reminder.NextReminder.IsZero() {
+		return false
+	}
+	return true
+}
+
+func ValidateNextReminder(reminder models.Reminder) bool {
+	expectedDate := reminder.StartTime
+
+	switch reminder.Frequency {
+	case "n":
+		expectedDate = expectedDate.Add(time.Minute * time.Duration(*reminder.IntervalInMinutes))
+	case "d", "w", "m", "y":
+		expectedDate = expectedDate.Add(time.Duration(*reminder.Interval))
+	case "s":
+	}
+
+	return reminder.NextReminder.Equal(expectedDate)
 }
