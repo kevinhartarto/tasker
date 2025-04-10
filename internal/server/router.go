@@ -12,6 +12,7 @@ import (
 	"github.com/kevinhartarto/tasker/internal/controllers"
 	"github.com/kevinhartarto/tasker/internal/database"
 	"github.com/kevinhartarto/tasker/internal/utils"
+	"github.com/redis/go-redis/v9"
 )
 
 func getCorsConfig() cors.Config {
@@ -23,7 +24,7 @@ func getCorsConfig() cors.Config {
 	return localConfig
 }
 
-func NewHandler(database database.Database) *fiber.App {
+func NewHandler(database database.Database, redis redis.Client) *fiber.App {
 
 	app := fiber.New()
 	app.Use(healthcheck.New())

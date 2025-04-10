@@ -94,6 +94,7 @@ func getDBConnection() string {
 	database := utils.GetEnvOrDefault("DB_DATABASE", "devstack")
 	username := utils.GetEnvOrDefault("DB_USERNAME", "developer")
 	password := utils.GetEnvOrDefault("DB_PASSWORD", "localDevstack01")
+
 	port := utils.GetEnvOrDefault("DB_PORT", "5432")
 	host := utils.GetEnvOrDefault("DB_HOST", "localhost")
 	ssl := utils.GetEnvOrDefault("SSL_MODE", "disable")

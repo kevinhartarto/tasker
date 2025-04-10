@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
+	"github.com/gen2brain/beeep"
 	"github.com/google/uuid"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/kevinhartarto/tasker/internal/logger"
 	"github.com/kevinhartarto/tasker/internal/models"
 )
+
+var log = logger.GetLogger()
 
 func GetEnvOrDefault(envName string, defaultValue string) any {
 	if envValue := os.Getenv(envName); envValue != "" {
@@ -103,6 +108,8 @@ func ValidateReminder(reminder models.Reminder) bool {
 			}
 			// check next reminder
 			return ValidateNextReminder(reminder)
+		default:
+			break
 		}
 	}
 	return true
@@ -128,7 +135,32 @@ func ValidateNextReminder(reminder models.Reminder) bool {
 	case "d", "w", "m", "y":
 		expectedDate = expectedDate.Add(time.Duration(*reminder.Interval))
 	case "s":
+		// get next reminder week day
+		nextDateWeekday := strings.ToLower(reminder.NextReminder.Weekday().String())
+
+		// compare week day with repeat days
+		if !slices.Contains(reminder.RepeatDays, nextDateWeekday[0:3]) &&
+			(reminder.NextReminder.After(*reminder.RepeatUntil)) {
+			return false
+		}
+
+		return true
 	}
 
-	return reminder.NextReminder.Equal(expectedDate)
+	return (reminder.NextReminder.Equal(expectedDate)) && (reminder.NextReminder.Before(*reminder.RepeatUntil))
+}
+
+func SendDesktopNotification(level string, title string, msgBody string) {
+	switch strings.ToLower(level) {
+	case "notify":
+		if err := beeep.Notify(title, msgBody, "resources/assets/normal_notification.jpg"); err != nil {
+			log.Info("Failed to send notification (" + title + ")")
+		}
+	case "alert":
+		if err := beeep.Alert(title, msgBody, "resources/assets/normal_notification.jpg"); err != nil {
+			log.Info("Failed to send alert (" + title + ")")
+		}
+	default:
+		log.Info("Unknown dekstop notification level, please use either 'notify' or 'alert' !")
+	}
 }

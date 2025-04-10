@@ -22,12 +22,14 @@ func main() {
 	gorm := database.Start()
 	log.Info("Tasker connection with database established.")
 
-	app := server.NewHandler(gorm)
+	redis := server.StartRedis()
+	app := server.NewHandler(gorm, *redis)
 
 	apiPort := utils.GetEnvOrDefault("PORT_API", "3030")
 	apiAddr := fmt.Sprintf(":%v", apiPort)
 
 	log.Info("Running Tasker server", "Port", apiAddr)
+	utils.SendDesktopNotification("notify", "Tasker Running", "Tasker is now running")
 	if appErr := app.Listen(apiAddr); appErr != nil {
 		log.Error("Failed to start Tasker, exiting...")
 		closeApp(app, gorm)
