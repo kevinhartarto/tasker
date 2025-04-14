@@ -8,6 +8,13 @@ services:
       - "3030:3030"
     networks:
       - forge_highway
+  redis:
+    image: "redis:latest"
+    container_name: dev-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - forge_highway
 
 networks:
   forge_highway:

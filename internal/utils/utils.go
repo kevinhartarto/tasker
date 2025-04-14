@@ -151,16 +151,23 @@ func ValidateNextReminder(reminder models.Reminder) bool {
 }
 
 func SendDesktopNotification(level string, title string, msgBody string) {
-	switch strings.ToLower(level) {
-	case "notify":
-		if err := beeep.Notify(title, msgBody, "resources/assets/normal_notification.jpg"); err != nil {
-			log.Info("Failed to send notification (" + title + ")")
+	enableNotification := GetEnvOrDefault("ENABLE_DESKTOP_NOTIFICATIONS", "0") // by default disable all desktop notification as tasker will be run on docker env
+	if enableNotification == "1" {
+		log.Info("Desktop notification is enabled")
+
+		switch strings.ToLower(level) {
+		case "notify":
+			if err := beeep.Notify(title, msgBody, "~/opt/app/resources/assets/normal_notification.jpg"); err != nil {
+				log.Info("Failed to send notification (" + title + ") with error " + err.Error())
+			}
+		case "alert":
+			if err := beeep.Alert(title, msgBody, "~/opt/app/resources/assets/normal_notification.jpg"); err != nil {
+				log.Info("Failed to send alert (" + title + ") with error " + err.Error())
+			}
+		default:
+			log.Info("Unknown dekstop notification level, please use either 'notify' or 'alert' !")
 		}
-	case "alert":
-		if err := beeep.Alert(title, msgBody, "resources/assets/normal_notification.jpg"); err != nil {
-			log.Info("Failed to send alert (" + title + ")")
-		}
-	default:
-		log.Info("Unknown dekstop notification level, please use either 'notify' or 'alert' !")
+	} else {
+		log.Info("Desktop notification is disabled")
 	}
 }
