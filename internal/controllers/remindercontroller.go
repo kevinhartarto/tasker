@@ -68,7 +68,7 @@ func (rc *reminderController) CreateRemainder(c *fiber.Ctx) error {
 
 	if !utils.ValidateReminder(newReminder) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Reminder name, id, start time and task id are required",
+			"error": "Invalid reminder",
 		})
 	}
 

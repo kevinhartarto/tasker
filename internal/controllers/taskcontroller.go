@@ -212,14 +212,14 @@ func (tc *taskController) GetTasksByFrequency(c *fiber.Ctx) error {
 
 func (tc *taskController) UpdateTask(c *fiber.Ctx) error {
 	var task models.Task
+	var data map[string]interface{}
 
-	if err := c.BodyParser(&task); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid JSON input",
-		})
+	if err := json.Unmarshal(c.Body(), &data); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid JSON"})
 	}
 
-	result := tc.db.Gorm().Where("task_id = ?", task.TaskId).Save(&task)
+	tc.db.Gorm().Model(&task).Where("task_id = ?", data["task_id"]).Updates(data)
+	result := tc.db.Gorm().Where("task_id = ?", data["task_id"]).First(&task)
 
 	if result.Error != nil {
 		return result.Error
