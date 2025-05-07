@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -8,8 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/kevinhartarto/tasker/internal/database"
+	"github.com/kevinhartarto/tasker/internal/logger"
 	"github.com/kevinhartarto/tasker/internal/models"
 	"github.com/kevinhartarto/tasker/internal/utils"
+	"github.com/segmentio/kafka-go"
 )
 
 type ReminderController interface {
@@ -32,13 +35,20 @@ type ReminderController interface {
 
 	// Update a reminder
 	UpdateRemainder(fiber.Ctx) error
+
+	// Send kafka message to mailman
+	// this will be handled by a cron job
+	SendReminder()
 }
 
 type reminderController struct {
 	db database.Database
 }
 
-var reminderInstance *reminderController
+var (
+	reminderInstance *reminderController
+	log              = logger.GetLogger()
+)
 
 func NewReminderController(db database.Database) *reminderController {
 	if reminderInstance != nil {
@@ -104,6 +114,7 @@ func (rc *reminderController) GetAllReminders(c *fiber.Ctx) error {
 				"repeat_until":        reminder.RepeatUntil,
 				"interval":            reminder.Interval,
 				"interval_in_minutes": reminder.IntervalInMinutes,
+				"next_reminder":       reminder.NextReminder,
 				"updated_at":          reminder.UpdatedAt,
 			})
 		}
@@ -134,6 +145,7 @@ func (rc *reminderController) GetReminderByUuid(uuid uuid.UUID, c *fiber.Ctx) er
 			"repeat_until":        reminder.RepeatUntil,
 			"interval":            reminder.Interval,
 			"interval_in_minutes": reminder.IntervalInMinutes,
+			"next_reminder":       reminder.NextReminder,
 			"updated_at":          reminder.UpdatedAt,
 		})
 	}
@@ -158,6 +170,7 @@ func (rc *reminderController) GetReminderByTaskUuid(uuid uuid.UUID, c *fiber.Ctx
 			"repeat_until":        reminder.RepeatUntil,
 			"interval":            reminder.Interval,
 			"interval_in_minutes": reminder.IntervalInMinutes,
+			"next_reminder":       reminder.NextReminder,
 			"updated_at":          reminder.UpdatedAt,
 		})
 	}
@@ -180,5 +193,47 @@ func (rc *reminderController) UpdateRemainder(c *fiber.Ctx) error {
 		message := fmt.Sprintf("Reminder %s (%v) for task (%v) updated",
 			reminder.Reminder, reminder.ReminderId, reminder.TaskId)
 		return c.Status(fiber.StatusCreated).SendString(message)
+	}
+}
+
+func (rc *reminderController) SendReminder(c *fiber.Ctx) {
+	var reminders []models.Reminder
+	var reminderToSend []kafka.Message
+	result := rc.db.Gorm().Find(&reminders)
+
+	if result.Error == nil {
+
+		currentDateTime := time.Now()
+		for _, reminder := range reminders {
+			if reminder.NextReminder.Compare(currentDateTime) >= 0 {
+				reminderToSend = append(reminderToSend, kafka.Message{
+					Key:   []byte(reminder.Reminder),
+					Value: []byte(reminder.Description),
+				})
+			}
+		}
+
+		// We're ready to send messages
+		topic := "tasker_reminder_notify"
+		partition := 0
+
+		conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", topic, partition)
+		if err != nil {
+			log.Info("failed to dial leader:", err)
+		}
+
+		conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+		_, err = conn.WriteMessages(
+			reminderToSend...,
+		)
+		if err != nil {
+			log.Info("failed to write messages:", err)
+		}
+
+		if err := conn.Close(); err != nil {
+			log.Info("failed to close writer:", err)
+		}
+	} else {
+		log.Info("No reminder found: ", result.Error)
 	}
 }
