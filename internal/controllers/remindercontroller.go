@@ -50,7 +50,7 @@ var (
 	log              = logger.GetLogger()
 )
 
-func NewReminderController(db database.Database) *reminderController {
+func InitReminderController(db database.Database) *reminderController {
 	if reminderInstance != nil {
 		return reminderInstance
 	}

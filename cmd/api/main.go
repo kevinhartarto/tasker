@@ -23,8 +23,9 @@ func main() {
 	log.Info("Tasker connection with database established.")
 
 	redis := server.StartRedis()
-	app := server.NewHandler(gorm, *redis)
+	app := server.TaskerHandler(gorm, *redis)
 
+	log.Info("Tasker starting...")
 	apiPort := utils.GetEnvOrDefault("PORT_API", "3030")
 	apiAddr := fmt.Sprintf(":%v", apiPort)
 

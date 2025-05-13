@@ -24,7 +24,7 @@ func getCorsConfig() cors.Config {
 	return localConfig
 }
 
-func NewHandler(database database.Database, redis redis.Client) *fiber.App {
+func TaskerHandler(database database.Database, redis redis.Client) *fiber.App {
 
 	app := fiber.New()
 	app.Use(healthcheck.New())
@@ -80,7 +80,7 @@ func NewHandler(database database.Database, redis redis.Client) *fiber.App {
 	})
 
 	// Reminders
-	reminder := controllers.NewReminderController(database)
+	reminder := controllers.InitReminderController(database)
 	listAPI.Get("/reminders", func(c *fiber.Ctx) error {
 		return reminder.GetAllReminders(c)
 	})
